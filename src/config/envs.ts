@@ -2,12 +2,14 @@
 import 'dotenv/config';
 
 // Importa la librería Joi para validación de esquemas
-import * as joi from 'joi';
+import Joi, * as joi from 'joi';
 
 // Definimos una interfaz que representa la estructura esperada de las variables de entorno
 interface EnvVars {
   PORT: number; // El puerto debe ser un número
   DATABASE_URL: string;
+
+  NATS_SERVERS: string[];
 }
 
 // Creamos un esquema de validación usando Joi
@@ -16,12 +18,17 @@ const envSchema = joi
     // Validamos que PORT sea un número y sea obligatorio (required)
     PORT: joi.number().required(),
     DATABASE_URL: joi.string().required(),
+
+    NATS_SERVERS: joi.array().items(joi.string()).required(),
   })
   // Permitimos que existan otras variables de entorno no definidas en el esquema
   .unknown(true);
 
 // Validamos las variables de entorno (process.env) contra el esquema definido
-const { error, value } = envSchema.validate(process.env);
+const { error, value } = envSchema.validate({
+  ...process.env,
+  NATS_SERVERS: process.env.NATS_SERVERS!.split(','),
+});
 
 // Si hay un error en la validación, lanzamos una excepción
 if (error) {
@@ -35,4 +42,5 @@ const envVars: EnvVars = value;
 export const envs = {
   port: envVars.PORT, // Exportamos el puerto como "port" (podría ser diferente del nombre en .env)
   DATABASE_URL: envVars.DATABASE_URL,
+  NATS_SERVERS: envVars.NATS_SERVERS,
 };
